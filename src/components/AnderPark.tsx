@@ -10,7 +10,7 @@ import {
   PixelGrass,
   PixelSun,
   PixelTree,
-  TREE_MATRIX,
+  TREE_MATRICES,
 } from './PixelDecor';
 import { PlacedDecoration } from './PlacedDecoration';
 
@@ -54,6 +54,7 @@ export function AnderPark({
         size: 4 + Math.round(Math.random() * 8),
         bottom: 98 + Math.random() * 3,
         seed: Math.random(),
+        variant: Math.floor(Math.random() * TREE_MATRICES.length),
       })),
     [],
   );
@@ -100,10 +101,10 @@ export function AnderPark({
             className="absolute opacity-90"
             style={{
               left: `${tree.left}%`,
-              bottom: `calc(${tree.bottom}% + ${pixelSpriteHeight(TREE_MATRIX, tree.size)}px)`,
+              bottom: `calc(${tree.bottom}% + ${pixelSpriteHeight(TREE_MATRICES[tree.variant], tree.size)}px)`,
             }}
           >
-            <PixelTree size={tree.size} palette={treePalette(tree.seed, colorMode)} />
+            <PixelTree variant={tree.variant} size={tree.size} palette={treePalette(tree.seed, colorMode)} />
           </div>
         ))}
 

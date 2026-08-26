@@ -32,7 +32,8 @@ export function pixelSpriteHeight(matrix: number[][], size: number): number {
   return matrix.length * size;
 }
 
-export const TREE_MATRIX = [
+// Tiered pine
+const TREE_MATRIX_PINE = [
   [0, 0, 0, 1, 0, 0, 0],
   [0, 0, 1, 1, 1, 0, 0],
   [0, 1, 1, 1, 1, 1, 0],
@@ -43,16 +44,52 @@ export const TREE_MATRIX = [
   [0, 0, 0, 2, 0, 0, 0],
 ];
 
+// Round bushy canopy
+const TREE_MATRIX_ROUND = [
+  [0, 1, 1, 1, 0],
+  [1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 0],
+  [0, 0, 2, 0, 0],
+  [0, 0, 2, 0, 0],
+];
+
+// Tall, narrow conifer
+const TREE_MATRIX_TALL = [
+  [0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0],
+  [0, 1, 1, 1, 0],
+  [0, 1, 1, 1, 0],
+  [1, 1, 1, 1, 1],
+  [0, 0, 2, 0, 0],
+  [0, 0, 2, 0, 0],
+  [0, 0, 2, 0, 0],
+];
+
+// Wide, low canopy (oak-ish)
+const TREE_MATRIX_WIDE = [
+  [0, 1, 1, 1, 1, 1, 0, 0],
+  [1, 1, 1, 1, 1, 1, 1, 0],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 1, 1, 1, 0],
+  [0, 0, 0, 2, 2, 0, 0, 0],
+];
+
+export const TREE_MATRICES = [TREE_MATRIX_PINE, TREE_MATRIX_ROUND, TREE_MATRIX_TALL, TREE_MATRIX_WIDE];
+// Kept as a named export for anything that wants the classic pine specifically.
+export const TREE_MATRIX = TREE_MATRIX_PINE;
+
 interface PixelTreeProps {
+  variant?: number;
   size?: number;
   palette?: Record<number, string>;
   className?: string;
 }
 
-export function PixelTree({ size = 6, palette, className }: PixelTreeProps) {
+export function PixelTree({ variant = 0, size = 6, palette, className }: PixelTreeProps) {
   return (
     <PixelSprite
-      matrix={TREE_MATRIX}
+      matrix={TREE_MATRICES[variant % TREE_MATRICES.length]}
       size={size}
       palette={palette ?? { 1: '#c7c7c7', 2: '#5a5a5a' }}
       className={className}
