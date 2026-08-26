@@ -18,6 +18,7 @@ export const SPECIES: Species[] = [
       { id: 'octopus-todo', label: 'Checked off a to-do item', foodReward: 1 },
       { id: 'octopus-inbox-zero', label: 'Cleared your inbox', foodReward: 3 },
     ],
+    colorFilter: 'sepia(1) saturate(4) hue-rotate(165deg) brightness(0.95)',
   },
   {
     id: 'beaver',
@@ -31,6 +32,7 @@ export const SPECIES: Species[] = [
       { id: 'beaver-deepwork', label: 'Completed a focused work session', foodReward: 2 },
       { id: 'beaver-milestone', label: 'Hit a project milestone', foodReward: 5 },
     ],
+    colorFilter: 'sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.95)',
   },
   {
     id: 'owl',
@@ -44,6 +46,7 @@ export const SPECIES: Species[] = [
       { id: 'owl-reading', label: 'Finished an assigned reading', foodReward: 2 },
       { id: 'owl-case-prep', label: 'Prepped a case cold-call ready', foodReward: 4 },
     ],
+    colorFilter: 'sepia(1) saturate(3) hue-rotate(20deg) brightness(1)',
   },
 ];
 

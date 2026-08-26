@@ -29,6 +29,10 @@ body {
   background: linear-gradient(to bottom, #8a8a8a 0%, #c2c2c2 55%, #eeeeee 100%);
 }
 
+.pixel-sky-color {
+  background: linear-gradient(to bottom, #4d7fc9 0%, #7fb3e0 55%, #d9edd0 100%);
+}
+
 .pixel-outline {
   color: #111;
   text-shadow: 1px 0 #fff, -1px 0 #fff, 0 1px #fff, 0 -1px #fff;
@@ -37,5 +41,11 @@ body {
 .pixel-ground {
   background-color: #dcdcdc;
   background-image: conic-gradient(#c8c8c8 90deg, #dcdcdc 90deg 180deg, #c8c8c8 180deg 270deg, #dcdcdc 270deg);
+  background-size: 6px 6px;
+}
+
+.pixel-ground-color {
+  background-color: #8fc76a;
+  background-image: conic-gradient(#7ab558 90deg, #8fc76a 90deg 180deg, #7ab558 180deg 270deg, #8fc76a 270deg);
   background-size: 6px 6px;
 }

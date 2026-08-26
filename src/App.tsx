@@ -5,6 +5,7 @@ import { PetDetailModal } from './components/PetDetailModal';
 import { ShareModal } from './components/ShareModal';
 import { ShopModal } from './components/ShopModal';
 import { MAX_PETS } from './data/species';
+import { useColorMode } from './hooks/useColorMode';
 import { usePark } from './hooks/usePark';
 import { useRoster } from './hooks/useRoster';
 import type { Pet } from './types';
@@ -21,6 +22,7 @@ function App() {
     dismissLevelUp,
   } = useRoster();
   const { coins, ownedDecorationIds, decorationPositions, earnCoins, buyDecoration, moveDecoration } = usePark();
+  const { colorMode, toggleColorMode } = useColorMode();
 
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [adoptOpen, setAdoptOpen] = useState(false);
@@ -51,6 +53,7 @@ function App() {
         pets={roster}
         ownedDecorationIds={ownedDecorationIds}
         decorationPositions={decorationPositions}
+        colorMode={colorMode}
         onSelectPet={(pet: Pet) => setSelectedPetId(pet.id)}
         onMoveDecoration={moveDecoration}
       />
@@ -63,6 +66,13 @@ function App() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={toggleColorMode}
+            title="Toggle color"
+            className="border border-white/60 bg-transparent px-3 py-2 font-mono text-xs font-bold text-white hover:bg-white/10"
+          >
+            {colorMode ? '◑ COLOR' : '◐ MONO'}
+          </button>
           <button
             onClick={() => setShopOpen(true)}
             className="border border-white/60 bg-transparent px-3 py-2 font-mono text-xs font-bold text-white hover:bg-white/10"
@@ -108,6 +118,7 @@ function App() {
         <ShopModal
           coins={coins}
           ownedDecorationIds={ownedDecorationIds}
+          colorMode={colorMode}
           onBuy={buyDecoration}
           onClose={() => setShopOpen(false)}
         />

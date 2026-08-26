@@ -7,10 +7,12 @@ export interface Decoration {
   pixelSize: number;
   matrix: number[][];
   palette: Record<number, string>;
+  colorPalette: Record<number, string>;
 }
 
 // Outline (1) is auto-derived by buildOutlinedMatrix; fill tones: 2 = light, 3 = mid/shadow.
 const OUTLINE_PALETTE = { 1: '#141414', 2: '#f2f2f2', 3: '#a8a8a8' };
+const WOOD_PALETTE = { 1: '#241608', 2: '#c98a52', 3: '#8a5a30' };
 
 const DOGHOUSE_W = 20;
 const DOGHOUSE_H = 16;
@@ -63,14 +65,51 @@ const BLOCKS_MATRIX = buildOutlinedMatrix(
   },
   (x, y, region) => {
     const [top, bottom] = BLOCK_RANGES[region];
-    return y <= (top + bottom) / 2 ? 2 : 3;
+    const light = y <= (top + bottom) / 2;
+    // region-aware tone id (2/3 = block1, 4/5 = block2, 6/7 = block3) so each
+    // cube can carry its own color in colorPalette, not just a shared tint.
+    return region * 2 + (light ? 0 : 1);
   },
 );
+const BLOCKS_MONO_PALETTE = { 1: '#141414', 2: '#f0f0f0', 3: '#9a9a9a', 4: '#f0f0f0', 5: '#9a9a9a', 6: '#f0f0f0', 7: '#9a9a9a' };
+const BLOCKS_COLOR_PALETTE = {
+  1: '#141414',
+  2: '#ff8a80',
+  3: '#c94f45', // red block
+  4: '#82b1ff',
+  5: '#3f6fb0', // blue block
+  6: '#fff176',
+  7: '#c9a227', // yellow block
+};
 
 export const DECORATIONS: Decoration[] = [
-  { id: 'doghouse', name: 'Doghouse', cost: 15, pixelSize: 5, matrix: DOGHOUSE_MATRIX, palette: OUTLINE_PALETTE },
-  { id: 'perch', name: 'Perch', cost: 10, pixelSize: 5, matrix: PERCH_MATRIX, palette: OUTLINE_PALETTE },
-  { id: 'blocks', name: 'Toy Blocks', cost: 8, pixelSize: 4, matrix: BLOCKS_MATRIX, palette: OUTLINE_PALETTE },
+  {
+    id: 'doghouse',
+    name: 'Doghouse',
+    cost: 15,
+    pixelSize: 5,
+    matrix: DOGHOUSE_MATRIX,
+    palette: OUTLINE_PALETTE,
+    colorPalette: WOOD_PALETTE,
+  },
+  {
+    id: 'perch',
+    name: 'Perch',
+    cost: 10,
+    pixelSize: 5,
+    matrix: PERCH_MATRIX,
+    palette: OUTLINE_PALETTE,
+    colorPalette: WOOD_PALETTE,
+  },
+  {
+    id: 'blocks',
+    name: 'Toy Blocks',
+    cost: 8,
+    pixelSize: 4,
+    matrix: BLOCKS_MATRIX,
+    palette: BLOCKS_MONO_PALETTE,
+    colorPalette: BLOCKS_COLOR_PALETTE,
+  },
 ];
 
 export function getDecoration(id: string): Decoration | undefined {

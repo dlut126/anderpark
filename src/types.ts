@@ -13,6 +13,9 @@ export interface Species {
   foodName: string;
   foodEmoji: string;
   presetTasks: TaskPreset[];
+  // CSS filter applied to the (grayscale) art in color mode — a tint, not real
+  // recolored artwork, since we don't have a way to regenerate the source PNGs.
+  colorFilter: string;
 }
 
 export interface CustomTask {

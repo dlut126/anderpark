@@ -18,35 +18,43 @@ interface Props {
   pets: Pet[];
   ownedDecorationIds: string[];
   decorationPositions: Record<string, { left: number; bottom: number }>;
+  colorMode: boolean;
   onSelectPet: (pet: Pet) => void;
   onMoveDecoration: (id: string, left: number, bottom: number) => void;
+}
+
+// Derives a tree's palette from a stable per-tree seed, so a given tree keeps
+// the same relative light/darkness whether you're in mono or color mode.
+function treePalette(seed: number, colorMode: boolean) {
+  if (!colorMode) {
+    const canopyLightness = 110 + seed * 120;
+    return { 1: grayHex(canopyLightness), 2: grayHex(canopyLightness - 70) };
+  }
+  const canopyL = 26 + seed * 32;
+  const trunkL = Math.max(14, canopyL - 16);
+  return { 1: `hsl(112, 40%, ${canopyL}%)`, 2: `hsl(28, 45%, ${trunkL}%)` };
 }
 
 export function AnderPark({
   pets,
   ownedDecorationIds,
   decorationPositions,
+  colorMode,
   onSelectPet,
   onMoveDecoration,
 }: Props) {
   const groundRef = useRef<HTMLDivElement>(null);
 
   // Sit right on the horizon line, like a distant treeline behind the grass.
-  // Size and shade vary per tree so the line doesn't look stamped-out.
+  // Size and shade seed vary per tree so the line doesn't look stamped-out.
   const treeSpots = useMemo(
     () =>
-      [2, 14, 26, 38, 50, 62, 74, 86, 97].map((left) => {
-        const canopyLightness = 110 + Math.random() * 120;
-        return {
-          left,
-          size: 4 + Math.round(Math.random() * 8),
-          bottom: 98 + Math.random() * 3,
-          palette: {
-            1: grayHex(canopyLightness),
-            2: grayHex(canopyLightness - 70),
-          },
-        };
-      }),
+      [2, 14, 26, 38, 50, 62, 74, 86, 97].map((left) => ({
+        left,
+        size: 4 + Math.round(Math.random() * 8),
+        bottom: 98 + Math.random() * 3,
+        seed: Math.random(),
+      })),
     [],
   );
 
@@ -63,14 +71,29 @@ export function AnderPark({
   );
 
   return (
-    <div className="pixel-sky fixed inset-0 h-screen w-screen overflow-hidden">
-      <PixelSun size={11} className="absolute right-[10%] top-[10%]" />
-      <PixelCloud size={6} className="absolute left-[8%] top-[16%] opacity-80" />
-      <PixelCloud size={5} className="absolute right-[30%] top-[8%] opacity-60" />
-      <PixelCloud size={5} className="absolute left-[40%] top-[22%] opacity-50" />
+    <div className={`fixed inset-0 h-screen w-screen overflow-hidden ${colorMode ? 'pixel-sky-color' : 'pixel-sky'}`}>
+      <PixelSun size={11} color={colorMode ? '#ffd54f' : undefined} className="absolute right-[10%] top-[10%]" />
+      <PixelCloud
+        size={6}
+        color={colorMode ? '#ffffff' : undefined}
+        className="absolute left-[8%] top-[16%] opacity-80"
+      />
+      <PixelCloud
+        size={5}
+        color={colorMode ? '#ffffff' : undefined}
+        className="absolute right-[30%] top-[8%] opacity-60"
+      />
+      <PixelCloud
+        size={5}
+        color={colorMode ? '#ffffff' : undefined}
+        className="absolute left-[40%] top-[22%] opacity-50"
+      />
 
       {/* ground */}
-      <div ref={groundRef} className="pixel-ground absolute inset-x-0 bottom-0 h-[46%] border-t-2 border-black/60">
+      <div
+        ref={groundRef}
+        className={`absolute inset-x-0 bottom-0 h-[46%] border-t-2 border-black/60 ${colorMode ? 'pixel-ground-color' : 'pixel-ground'}`}
+      >
         {treeSpots.map((tree, i) => (
           <div
             key={i}
@@ -80,7 +103,7 @@ export function AnderPark({
               bottom: `calc(${tree.bottom}% + ${pixelSpriteHeight(TREE_MATRIX, tree.size)}px)`,
             }}
           >
-            <PixelTree size={tree.size} palette={tree.palette} />
+            <PixelTree size={tree.size} palette={treePalette(tree.seed, colorMode)} />
           </div>
         ))}
 
@@ -93,7 +116,11 @@ export function AnderPark({
               bottom: `calc(${tuft.bottom}% + ${pixelSpriteHeight(GRASS_MATRICES[tuft.variant], tuft.size)}px)`,
             }}
           >
-            <PixelGrass variant={tuft.variant} size={tuft.size} />
+            <PixelGrass
+              variant={tuft.variant}
+              size={tuft.size}
+              color={colorMode ? (tuft.variant === 0 ? '#5fa84c' : '#4a8f3c') : undefined}
+            />
           </div>
         ))}
 
@@ -107,6 +134,7 @@ export function AnderPark({
               deco={deco}
               position={position}
               groundRef={groundRef}
+              colorMode={colorMode}
               onMove={(left, bottom) => onMoveDecoration(id, left, bottom)}
             />
           );
@@ -122,7 +150,7 @@ export function AnderPark({
           </p>
         </div>
       ) : (
-        pets.map((pet) => <PetSprite key={pet.id} pet={pet} onClick={() => onSelectPet(pet)} />)
+        pets.map((pet) => <PetSprite key={pet.id} pet={pet} colorMode={colorMode} onClick={() => onSelectPet(pet)} />)
       )}
     </div>
   );

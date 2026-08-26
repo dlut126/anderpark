@@ -5,10 +5,11 @@ import type { Pet } from '../types';
 
 interface Props {
   pet: Pet;
+  colorMode: boolean;
   onClick: () => void;
 }
 
-export function PetSprite({ pet, onClick }: Props) {
+export function PetSprite({ pet, colorMode, onClick }: Props) {
   const species = getSpecies(pet.speciesId);
   const isHungry = pet.hunger < 35;
   const isStarving = pet.hunger < 15;
@@ -41,6 +42,7 @@ export function PetSprite({ pet, onClick }: Props) {
           src={species.image}
           alt={pet.nickname}
           className="h-32 w-32 object-contain animate-bob [image-rendering:pixelated]"
+          style={colorMode ? { filter: species.colorFilter } : undefined}
         />
         <span className="absolute -bottom-1 -right-1 border border-black bg-white px-1 font-mono text-[10px] font-bold text-black">
           Lv{pet.level}

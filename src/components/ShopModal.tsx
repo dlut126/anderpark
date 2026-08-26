@@ -4,11 +4,12 @@ import { PixelSprite } from './PixelDecor';
 interface Props {
   coins: number;
   ownedDecorationIds: string[];
+  colorMode: boolean;
   onBuy: (id: string) => void;
   onClose: () => void;
 }
 
-export function ShopModal({ coins, ownedDecorationIds, onBuy, onClose }: Props) {
+export function ShopModal({ coins, ownedDecorationIds, colorMode, onBuy, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
@@ -31,7 +32,11 @@ export function ShopModal({ coins, ownedDecorationIds, onBuy, onClose }: Props) 
               >
                 <div className="flex items-center gap-4">
                   <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-xl bg-white">
-                    <PixelSprite matrix={deco.matrix} size={deco.pixelSize} palette={deco.palette} />
+                    <PixelSprite
+                      matrix={deco.matrix}
+                      size={deco.pixelSize}
+                      palette={colorMode ? deco.colorPalette : deco.palette}
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-emerald-900">{deco.name}</p>

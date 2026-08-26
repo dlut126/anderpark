@@ -6,6 +6,7 @@ interface Props {
   deco: Decoration;
   position: { left: number; bottom: number };
   groundRef: RefObject<HTMLDivElement | null>;
+  colorMode: boolean;
   onMove: (left: number, bottom: number) => void;
 }
 
@@ -13,7 +14,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function PlacedDecoration({ deco, position, groundRef, onMove }: Props) {
+export function PlacedDecoration({ deco, position, groundRef, colorMode, onMove }: Props) {
   const [dragPos, setDragPos] = useState<{ left: number; bottom: number } | null>(null);
   const dragOffset = useRef({ dx: 0, dy: 0 });
 
@@ -73,7 +74,7 @@ export function PlacedDecoration({ deco, position, groundRef, onMove }: Props) {
       onPointerCancel={endDrag}
       title={`Drag to move ${deco.name}`}
     >
-      <PixelSprite matrix={deco.matrix} size={deco.pixelSize} palette={deco.palette} />
+      <PixelSprite matrix={deco.matrix} size={deco.pixelSize} palette={colorMode ? deco.colorPalette : deco.palette} />
     </div>
   );
 }

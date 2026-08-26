@@ -78,8 +78,16 @@ const SUN_MATRIX = [
   [0, 0, 0, 1, 0, 0, 0],
 ];
 
-export function PixelSun({ size = 8, className }: { size?: number; className?: string }) {
-  return <PixelSprite matrix={SUN_MATRIX} size={size} palette={{ 1: '#f5f5f5' }} className={className} />;
+export function PixelSun({
+  size = 8,
+  color = '#f5f5f5',
+  className,
+}: {
+  size?: number;
+  color?: string;
+  className?: string;
+}) {
+  return <PixelSprite matrix={SUN_MATRIX} size={size} palette={{ 1: color }} className={className} />;
 }
 
 const CLOUD_MATRIX = [
@@ -110,17 +118,19 @@ export const GRASS_MATRICES = [GRASS_MATRIX_A, GRASS_MATRIX_B];
 export function PixelGrass({
   variant = 0,
   size = 4,
+  color = '#6b6b6b',
   className,
 }: {
   variant?: number;
   size?: number;
+  color?: string;
   className?: string;
 }) {
   return (
     <PixelSprite
       matrix={GRASS_MATRICES[variant % GRASS_MATRICES.length]}
       size={size}
-      palette={{ 1: '#6b6b6b' }}
+      palette={{ 1: color }}
       className={className}
     />
   );
