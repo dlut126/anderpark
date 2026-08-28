@@ -16,16 +16,11 @@ interface GoalItem {
   needType: NeedType;
 }
 
-interface Suggestion {
-  title: string;
-  needType: NeedType;
-}
-
-// Every preset goal across every need, shown as one pool — picking one
-// auto-assigns its need, no separate tagging step required.
-const SUGGESTIONS: Suggestion[] = NEED_DEFINITIONS.flatMap((def) =>
-  GOAL_PRESETS[def.id].map((p) => ({ title: p.title, needType: def.id })),
-);
+// One flat pool of goal ideas — no goal is "for" any particular need. Which
+// need a goal ends up feeding is decided purely by which slot is next open
+// when you add it, never by the goal's content, so adding one goal never
+// locks out an unrelated one.
+const SUGGESTIONS: string[] = GOAL_PRESETS.map((p) => p.title);
 
 // Step 0 = appearance + name, step 1 = collect goals (each auto-tagged to a
 // need on add), steps 2..N = tasks for each goal.
@@ -42,10 +37,12 @@ export function OnboardingModal({ onCreate }: Props) {
   const takenNeeds = new Set(goalItems.map((g) => g.needType));
   const nextFreeNeed = NEED_DEFINITIONS.find((def) => !takenNeeds.has(def.id))?.id ?? null;
 
-  const addGoal = (title: string, needType: NeedType) => {
+  // Every goal — preset or custom — lands wherever the next open slot is.
+  // No goal is disabled because of what some *other* goal happened to claim.
+  const addGoal = (title: string) => {
     const trimmed = title.trim();
-    if (!trimmed || takenNeeds.has(needType)) return;
-    setGoalItems((prev) => [...prev, { id: crypto.randomUUID(), title: trimmed, needType }]);
+    if (!trimmed || nextFreeNeed === null) return;
+    setGoalItems((prev) => [...prev, { id: crypto.randomUUID(), title: trimmed, needType: nextFreeNeed }]);
   };
 
   const removeGoal = (id: string) => {
@@ -146,24 +143,24 @@ export function OnboardingModal({ onCreate }: Props) {
             </p>
 
             <div className="mb-3 flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => {
-                const added = goalItems.some((g) => g.title === s.title);
-                const slotTaken = !added && takenNeeds.has(s.needType);
+              {SUGGESTIONS.map((title) => {
+                const added = goalItems.some((g) => g.title === title);
+                const noRoomLeft = !added && nextFreeNeed === null;
                 return (
                   <button
-                    key={s.title}
-                    disabled={added || slotTaken}
-                    onClick={() => addGoal(s.title, s.needType)}
+                    key={title}
+                    disabled={added || noRoomLeft}
+                    onClick={() => addGoal(title)}
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                       added
                         ? 'cursor-default border-emerald-200 bg-emerald-100 text-emerald-400'
-                        : slotTaken
+                        : noRoomLeft
                           ? 'cursor-not-allowed border-emerald-100 bg-emerald-50/50 text-emerald-300'
                           : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-400'
                     }`}
                   >
                     {added ? '✓ ' : '+ '}
-                    {s.title}
+                    {title}
                   </button>
                 );
               })}
@@ -179,8 +176,7 @@ export function OnboardingModal({ onCreate }: Props) {
               <button
                 disabled={!customGoalText.trim() || nextFreeNeed === null}
                 onClick={() => {
-                  if (nextFreeNeed === null) return;
-                  addGoal(customGoalText, nextFreeNeed);
+                  addGoal(customGoalText);
                   setCustomGoalText('');
                 }}
                 className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-200"
@@ -232,7 +228,7 @@ export function OnboardingModal({ onCreate }: Props) {
 
             <p className="mb-2 text-xs font-semibold text-emerald-700">Common tasks — tap to add</p>
             <div className="mb-3 flex flex-wrap gap-2">
-              {tasksForGoal(currentGoal.needType, currentGoal.title).map((task) => {
+              {tasksForGoal(currentGoal.title).map((task) => {
                 const added = currentTasks.some((t) => t.label === task.label);
                 return (
                   <button

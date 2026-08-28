@@ -113,7 +113,7 @@ function ActivateNeedForm({
   return (
     <div className="mt-2 space-y-2">
       <div className="flex flex-wrap gap-2">
-        {GOAL_PRESETS[needType].map((preset) => (
+        {GOAL_PRESETS.map((preset) => (
           <button
             key={preset.title}
             onClick={() => {
@@ -137,7 +137,7 @@ function ActivateNeedForm({
         className="w-full rounded-lg border border-emerald-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500"
       />
       <div className="flex flex-wrap gap-2">
-        {tasksForGoal(needType, title).map((task) => {
+        {tasksForGoal(title).map((task) => {
           const added = tasks.some((t) => t.label === task.label);
           return (
             <button
