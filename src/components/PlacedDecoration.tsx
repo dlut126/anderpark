@@ -57,14 +57,17 @@ export function PlacedDecoration({ deco, position, groundRef, colorMode, locked,
     pointerStart.current = { x: e.clientX, y: e.clientY };
     const pointer = pointerToPercent(e.clientX, e.clientY);
     dragOffset.current = { dx: pointer.left - position.left, dy: pointer.bottom - position.bottom };
-    // An item can never be dragged high enough to visually poke up into the
-    // sky. The wrapper's `bottom` is `calc(X% + height px)` with an explicit
-    // `height` too, so its rendered top edge sits at
-    // `groundBottom - X%*groundHeight/100 - 2*height` — solve for the X% at
-    // which that top edge reaches the ground's own top edge.
+    // An item's base can never be lifted off the ground — but its top is
+    // free to rise above the horizon, since a tall item (a telescope, a
+    // mansion) is supposed to stick up like a real object would; a short one
+    // (a pond) just naturally won't reach that far on its own. The wrapper's
+    // `bottom` is `calc(X% + height px)` with an explicit `height` too, so
+    // its rendered *bottom* edge sits at `groundBottom - X%*groundHeight/100
+    // - height` — solve for the X% at which that bottom edge reaches the
+    // ground's own top edge (i.e. the base is right at the horizon).
     const groundHeightPx = groundRef.current?.getBoundingClientRect().height ?? 0;
     maxBottomPercent.current =
-      groundHeightPx > 0 ? clamp(100 - (2 * height * 100) / groundHeightPx, 2, 96) : 40;
+      groundHeightPx > 0 ? clamp(100 - (height * 100) / groundHeightPx, 2, 96) : 60;
     setDragPos(position);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
