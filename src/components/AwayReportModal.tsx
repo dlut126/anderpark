@@ -37,6 +37,16 @@ export function AwayReportModal({ character, report, onClose }: Props) {
           ))}
         </ul>
 
+        {(report.lostCoins > 0 || report.lostXp > 0) && (
+          <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3">
+            <p className="text-sm font-semibold text-rose-600">
+              Struggling took its toll — lost {Math.round(report.lostCoins)}c
+              {report.lostXp > 0 ? ` and ${Math.round(report.lostXp)} XP` : ''} while away.
+            </p>
+            <p className="mt-1 text-[11px] text-rose-500">Keep needs up to stop the bleeding and start recovering.</p>
+          </div>
+        )}
+
         <button
           onClick={onClose}
           className="mt-5 w-full rounded-full bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700"

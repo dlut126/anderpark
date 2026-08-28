@@ -6,7 +6,7 @@ import { APPEARANCES, getAppearance } from '../data/appearances';
 import { GOAL_PRESETS, tasksForGoal } from '../data/goalPresets';
 import { NEED_DEFINITIONS, XP_PER_LEVEL } from '../data/needs';
 import { displayStreak } from '../data/streak';
-import { vitalityStage, type VitalityStage } from '../data/vitality';
+import { STRUGGLE_GRACE_HOURS, struggleDrainRatePerHour, vitalityStage, type VitalityStage } from '../data/vitality';
 import type { GoalDraft } from '../hooks/useCharacter';
 import type { Character, GoalTask, NeedType } from '../types';
 import { NeedIcon } from './NeedIcon';
@@ -35,11 +35,12 @@ const vitalityStageBlurb: Record<VitalityStage, string> = {
 interface Props {
   character: Character;
   onClose: () => void;
-  onCompleteTask: (needType: NeedType, taskId: string) => number;
+  onCompleteTask: (needType: NeedType, taskId: string, note: string) => number;
   onAddCustomTask: (needType: NeedType, label: string, restoreAmount: number) => void;
   onActivateNeed: (needType: NeedType, draft: GoalDraft) => void;
   onUpdateCharacter: (updates: { appearanceId?: string; nickname?: string }) => void;
   onReset: () => void;
+  onOpenDailyLog?: () => void;
 }
 
 function playCompletionFeedback() {
@@ -48,19 +49,63 @@ function playCompletionFeedback() {
   }
 }
 
-function TaskRow({ task, onComplete }: { task: GoalTask; onComplete: () => number }) {
+function TaskRow({ task, onComplete }: { task: GoalTask; onComplete: (note: string) => number }) {
   const [celebrating, setCelebrating] = useState(false);
   const [awarded, setAwarded] = useState(task.restoreAmount);
+  const [logging, setLogging] = useState(false);
+  const [note, setNote] = useState('');
 
-  const handleClick = () => {
+  const submit = () => {
+    const trimmed = note.trim();
+    if (!trimmed) return;
     playCompletionFeedback();
-    const reward = onComplete();
+    const reward = onComplete(trimmed);
     setAwarded(reward);
     setCelebrating(true);
+    setLogging(false);
+    setNote('');
     setTimeout(() => setCelebrating(false), 700);
   };
 
   const lucky = celebrating && awarded !== task.restoreAmount;
+
+  if (logging) {
+    return (
+      <li className="rounded-xl border border-emerald-300 bg-emerald-50/60 px-3 py-2.5">
+        <p className="mb-1.5 text-sm font-medium text-emerald-800">{task.label}</p>
+        <p className="mb-1.5 text-[11px] text-emerald-500">What did you actually do? A sentence is enough.</p>
+        <div className="flex gap-2">
+          <input
+            autoFocus
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submit();
+              if (e.key === 'Escape') setLogging(false);
+            }}
+            placeholder="e.g. read chapter 3 of..."
+            className="flex-1 rounded-lg border border-emerald-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500"
+          />
+          <button
+            onClick={submit}
+            disabled={!note.trim()}
+            className="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-200"
+          >
+            Log it
+          </button>
+        </div>
+        <button
+          onClick={() => {
+            setLogging(false);
+            setNote('');
+          }}
+          className="mt-1.5 text-[11px] text-emerald-400 hover:text-emerald-600"
+        >
+          Cancel
+        </button>
+      </li>
+    );
+  }
 
   return (
     <li
@@ -69,7 +114,7 @@ function TaskRow({ task, onComplete }: { task: GoalTask; onComplete: () => numbe
       }`}
     >
       <button
-        onClick={handleClick}
+        onClick={() => setLogging(true)}
         aria-label={`Log: ${task.label}`}
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-base font-bold transition ${
           celebrating
@@ -270,6 +315,7 @@ export function CharacterDetailModal({
   onActivateNeed,
   onUpdateCharacter,
   onReset,
+  onOpenDailyLog,
 }: Props) {
   const appearance = getAppearance(character.appearanceId);
   const [confirmingReset, setConfirmingReset] = useState(false);
@@ -281,6 +327,10 @@ export function CharacterDetailModal({
   const canEditCharacter = hasAbility(character.level, 'edit-character');
   const streak = displayStreak(character.streak, new Date());
   const stage = vitalityStage(character.vitality);
+  const drainRate = struggleDrainRatePerHour(stage, character.streak.count);
+  const pastGrace =
+    character.strugglingSince !== null && (Date.now() - character.strugglingSince) / 3_600_000 > STRUGGLE_GRACE_HOURS;
+  const isDraining = pastGrace && (drainRate.coins > 0 || drainRate.xp > 0);
 
   const draftFor = (needType: NeedType) => taskDraft[needType] ?? { label: '', reward: 5 };
 
@@ -355,13 +405,23 @@ export function CharacterDetailModal({
             />
           </div>
           <p className="mt-1.5 text-[11px] text-emerald-500">{vitalityStageBlurb[stage]}</p>
+          {isDraining && (
+            <p className="mt-1.5 rounded-lg bg-rose-50 px-2 py-1.5 text-[11px] font-semibold text-rose-600">
+              ⚠ Losing ~{drainRate.coins}c and {drainRate.xp} XP per hour while this lasts
+            </p>
+          )}
+          {stage !== 'healthy' && stage !== 'thriving' && !pastGrace && (
+            <p className="mt-1.5 text-[11px] text-amber-600">
+              Fix this soon — coins and XP start draining after {STRUGGLE_GRACE_HOURS}h here.
+            </p>
+          )}
         </div>
 
         <div className="mb-5">
           <div className="mb-1 flex justify-between text-xs font-medium text-emerald-700">
             <span>XP</span>
             <span>
-              {character.xp}/{XP_PER_LEVEL}
+              {Math.round(character.xp)}/{XP_PER_LEVEL}
             </span>
           </div>
           <div className="h-2.5 w-full overflow-hidden rounded-full bg-emerald-100">
@@ -396,7 +456,7 @@ export function CharacterDetailModal({
 
                 <ul className="mb-2 space-y-1.5">
                   {goal.tasks.map((task) => (
-                    <TaskRow key={task.id} task={task} onComplete={() => onCompleteTask(def.id, task.id)} />
+                    <TaskRow key={task.id} task={task} onComplete={(note) => onCompleteTask(def.id, task.id, note)} />
                   ))}
                 </ul>
 
@@ -496,11 +556,22 @@ export function CharacterDetailModal({
 
         {character.taskLog.length > 0 && (
           <div className="mb-4 mt-5">
-            <h3 className="mb-2 text-sm font-bold text-emerald-900">Recent activity</h3>
-            <ul className="space-y-1 text-xs text-emerald-600">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-emerald-900">Recent activity</h3>
+              {onOpenDailyLog && (
+                <button onClick={onOpenDailyLog} className="text-xs font-semibold text-emerald-600 hover:text-emerald-800">
+                  View today's log
+                </button>
+              )}
+            </div>
+            <ul className="space-y-1.5 text-xs text-emerald-600">
               {character.taskLog.slice(0, 5).map((entry) => (
-                <li key={entry.id} className="flex items-center gap-1">
-                  <NeedIcon needType={entry.needType} size={12} /> {entry.taskLabel} — +{entry.restored}
+                <li key={entry.id} className="flex items-start gap-1.5">
+                  <NeedIcon needType={entry.needType} size={12} />
+                  <span>
+                    <span className="font-medium text-emerald-800">{entry.taskLabel}</span> — +{entry.restored}
+                    {entry.note && <span className="block text-emerald-500">"{entry.note}"</span>}
+                  </span>
                 </li>
               ))}
             </ul>

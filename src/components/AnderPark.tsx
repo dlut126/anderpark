@@ -1,5 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { getTier } from '../data/decorations';
+import type { ParkTheme } from '../data/themes';
+import type { DecorationInstance } from '../hooks/usePark';
 import type { Character } from '../types';
 import { CharacterSprite } from './CharacterSprite';
 import {
@@ -16,10 +18,15 @@ import { PlacedDecoration } from './PlacedDecoration';
 
 interface Props {
   character: Character | null;
-  ownedTierByLine: Record<string, number>;
-  decorationPositions: Record<string, { left: number; bottom: number }>;
+  instances: DecorationInstance[];
   colorMode: boolean;
+  theme: ParkTheme;
+  zoom: number;
+  parkWidthPercent: number;
+  celebrateInstanceId: string | null;
+  equippedOutfitId: string | null;
   onSelectCharacter: () => void;
+  onSelectInstance: (id: string) => void;
   onMoveDecoration: (id: string, left: number, bottom: number) => void;
 }
 
@@ -35,18 +42,31 @@ function treePalette(seed: number, colorMode: boolean) {
   return { 1: `hsl(112, 40%, ${canopyL}%)`, 2: `hsl(28, 45%, ${trunkL}%)` };
 }
 
+function darken(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, ((n >> 16) & 255) - amount);
+  const g = Math.max(0, ((n >> 8) & 255) - amount);
+  const b = Math.max(0, (n & 255) - amount);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 export function AnderPark({
   character,
-  ownedTierByLine,
-  decorationPositions,
+  instances,
   colorMode,
+  theme,
+  zoom,
+  parkWidthPercent,
+  celebrateInstanceId,
+  equippedOutfitId,
   onSelectCharacter,
+  onSelectInstance,
   onMoveDecoration,
 }: Props) {
   const groundRef = useRef<HTMLDivElement>(null);
+  const groundBase = colorMode ? theme.groundColor : theme.groundMono;
+  const groundDark = darken(groundBase, 22);
 
-  // Sit right on the horizon line, like a distant treeline behind the grass.
-  // Size and shade seed vary per tree so the line doesn't look stamped-out.
   const treeSpots = useMemo(
     () =>
       [2, 14, 26, 38, 50, 62, 74, 86, 97].map((left) => ({
@@ -55,6 +75,27 @@ export function AnderPark({
         bottom: 98 + Math.random() * 3,
         seed: Math.random(),
         variant: Math.floor(Math.random() * TREE_MATRICES.length),
+      })),
+    [],
+  );
+
+  const buildingSpots = useMemo(
+    () =>
+      [1, 12, 24, 36, 48, 60, 72, 84, 94].map((left) => ({
+        left,
+        width: 8 + Math.round(Math.random() * 6),
+        height: 40 + Math.round(Math.random() * 90),
+        lit: Math.random() > 0.4,
+      })),
+    [],
+  );
+
+  const starSpots = useMemo(
+    () =>
+      Array.from({ length: 40 }, () => ({
+        left: Math.random() * 100,
+        top: Math.random() * 70,
+        size: 1 + Math.round(Math.random() * 2),
       })),
     [],
   );
@@ -71,89 +112,156 @@ export function AnderPark({
     [],
   );
 
+  const skyBackground = colorMode ? theme.skyColor : theme.skyMono;
+
   return (
-    <div className={`fixed inset-0 overflow-hidden ${colorMode ? 'pixel-sky-color' : 'pixel-sky'}`}>
-      <PixelSun size={11} color={colorMode ? '#ffd54f' : undefined} className="absolute right-[10%] top-[10%]" />
-      <PixelCloud
-        size={6}
-        color={colorMode ? '#ffffff' : undefined}
-        className="absolute left-[8%] top-[16%] opacity-80"
-      />
-      <PixelCloud
-        size={5}
-        color={colorMode ? '#ffffff' : undefined}
-        className="absolute right-[30%] top-[8%] opacity-60"
-      />
-      <PixelCloud
-        size={5}
-        color={colorMode ? '#ffffff' : undefined}
-        className="absolute left-[40%] top-[22%] opacity-50"
-      />
-
-      {/* ground */}
+    <div
+      className="fixed inset-0 overflow-auto overscroll-contain"
+      style={{ touchAction: 'pan-x pan-y', background: skyBackground }}
+    >
       <div
-        ref={groundRef}
-        className={`absolute inset-x-0 bottom-0 h-[46%] border-t-2 border-black/60 ${colorMode ? 'pixel-ground-color' : 'pixel-ground'}`}
+        className="relative overflow-hidden"
+        style={{
+          width: `${parkWidthPercent}%`,
+          height: '100%',
+          minWidth: '100%',
+          minHeight: '100%',
+          background: skyBackground,
+          transform: `scale(${zoom})`,
+          transformOrigin: 'bottom left',
+        }}
       >
-        {treeSpots.map((tree, i) => (
-          <div
-            key={i}
-            className="absolute opacity-90"
-            style={{
-              left: `${tree.left}%`,
-              bottom: `calc(${tree.bottom}% + ${pixelSpriteHeight(TREE_MATRICES[tree.variant], tree.size)}px)`,
-            }}
-          >
-            <PixelTree variant={tree.variant} size={tree.size} palette={treePalette(tree.seed, colorMode)} />
-          </div>
-        ))}
-
-        {grassSpots.map((tuft, i) => (
-          <div
-            key={i}
-            className="absolute opacity-70"
-            style={{
-              left: `${tuft.left}%`,
-              bottom: `calc(${tuft.bottom}% + ${pixelSpriteHeight(GRASS_MATRICES[tuft.variant], tuft.size)}px)`,
-            }}
-          >
-            <PixelGrass
-              variant={tuft.variant}
-              size={tuft.size}
-              color={colorMode ? (tuft.variant === 0 ? '#5fa84c' : '#4a8f3c') : undefined}
+        {theme.decor === 'stars' ? (
+          <>
+            {starSpots.map((s, i) => (
+              <span
+                key={i}
+                className="absolute rounded-full bg-white opacity-80"
+                style={{ left: `${s.left}%`, top: `${s.top}%`, width: s.size, height: s.size }}
+              />
+            ))}
+            <PixelSun size={9} color={colorMode ? '#e8e8f0' : undefined} className="absolute right-[10%] top-[10%]" />
+          </>
+        ) : (
+          <>
+            <PixelSun size={11} color={colorMode ? '#ffd54f' : undefined} className="absolute right-[10%] top-[10%]" />
+            <PixelCloud
+              size={6}
+              color={colorMode ? '#ffffff' : undefined}
+              className="absolute left-[8%] top-[16%] opacity-80"
             />
-          </div>
-        ))}
-
-        {Object.entries(ownedTierByLine).map(([lineId, ownedCount]) => {
-          if (ownedCount <= 0) return null;
-          const deco = getTier(lineId, ownedCount - 1);
-          const position = decorationPositions[lineId];
-          if (!deco || !position) return null;
-          return (
-            <PlacedDecoration
-              key={lineId}
-              deco={deco}
-              position={position}
-              groundRef={groundRef}
-              colorMode={colorMode}
-              onMove={(left, bottom) => onMoveDecoration(lineId, left, bottom)}
+            <PixelCloud
+              size={5}
+              color={colorMode ? '#ffffff' : undefined}
+              className="absolute right-[30%] top-[8%] opacity-60"
             />
-          );
-        })}
-      </div>
+            <PixelCloud
+              size={5}
+              color={colorMode ? '#ffffff' : undefined}
+              className="absolute left-[40%] top-[22%] opacity-50"
+            />
+          </>
+        )}
 
-      {!character ? (
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <p className="border-2 border-white/70 bg-black px-4 py-3 text-center font-mono text-sm text-white">
-            ANDERPARK IS EMPTY
-            <br />
-            Create your character to get started.
-          </p>
+        {/* ground */}
+        <div
+          ref={groundRef}
+          className="absolute inset-x-0 bottom-0 h-[46%] border-t-2 border-black/60"
+          style={{
+            backgroundColor: groundBase,
+            backgroundImage: `conic-gradient(${groundDark} 90deg, ${groundBase} 90deg 180deg, ${groundDark} 180deg 270deg, ${groundBase} 270deg)`,
+            backgroundSize: '6px 6px',
+          }}
+        >
+          {theme.decor === 'trees' &&
+            treeSpots.map((tree, i) => (
+              <div
+                key={i}
+                className="absolute opacity-90"
+                style={{
+                  left: `${tree.left}%`,
+                  bottom: `calc(${tree.bottom}% + ${pixelSpriteHeight(TREE_MATRICES[tree.variant], tree.size)}px)`,
+                }}
+              >
+                <PixelTree variant={tree.variant} size={tree.size} palette={treePalette(tree.seed, colorMode)} />
+              </div>
+            ))}
+
+          {theme.decor === 'buildings' &&
+            buildingSpots.map((b, i) => (
+              <div
+                key={i}
+                className="absolute bottom-full border-2 border-black/70"
+                style={{
+                  left: `${b.left}%`,
+                  width: `${b.width}%`,
+                  height: b.height,
+                  backgroundColor: colorMode ? (b.lit ? '#5a4a2a' : '#2a2a38') : '#4a4a52',
+                }}
+              />
+            ))}
+
+          {theme.decor === 'waves' && (
+            <div
+              className="absolute inset-x-0 top-0 h-2 opacity-70"
+              style={{ backgroundColor: colorMode ? '#ffffff' : '#e8e8e8' }}
+            />
+          )}
+
+          {grassSpots.map((tuft, i) => (
+            <div
+              key={i}
+              className="absolute opacity-70"
+              style={{
+                left: `${tuft.left}%`,
+                bottom: `calc(${tuft.bottom}% + ${pixelSpriteHeight(GRASS_MATRICES[tuft.variant], tuft.size)}px)`,
+              }}
+            >
+              <PixelGrass
+                variant={tuft.variant}
+                size={tuft.size}
+                color={colorMode ? (tuft.variant === 0 ? '#5fa84c' : '#4a8f3c') : undefined}
+              />
+            </div>
+          ))}
+
+          {instances.map((instance) => {
+            const deco = getTier(instance.lineId, instance.tier);
+            if (!deco) return null;
+            return (
+              <PlacedDecoration
+                key={instance.id}
+                deco={deco}
+                position={{ left: instance.left, bottom: instance.bottom }}
+                groundRef={groundRef}
+                colorMode={colorMode}
+                locked={instance.locked}
+                celebrate={celebrateInstanceId === instance.id}
+                onMove={(left, bottom) => onMoveDecoration(instance.id, left, bottom)}
+                onTap={() => onSelectInstance(instance.id)}
+              />
+            );
+          })}
         </div>
-      ) : (
-        <CharacterSprite character={character} colorMode={colorMode} onClick={onSelectCharacter} />
-      )}
+
+        {!character ? (
+          <div className="absolute inset-0 flex items-center justify-center px-4">
+            <p className="border-2 border-white/70 bg-black px-4 py-3 text-center font-mono text-sm text-white">
+              ANDERPARK IS EMPTY
+              <br />
+              Create your character to get started.
+            </p>
+          </div>
+        ) : (
+          <CharacterSprite
+            character={character}
+            colorMode={colorMode}
+            instances={instances}
+            equippedOutfitId={equippedOutfitId}
+            onClick={onSelectCharacter}
+          />
+        )}
+      </div>
     </div>
   );
 }

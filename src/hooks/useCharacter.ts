@@ -7,19 +7,33 @@ import { recordLegacyEntry } from '../data/legacy';
 import { XP_PER_LEVEL, getNeedDefinition } from '../data/needs';
 import { loadCharacter, saveCharacter } from '../data/storage';
 import { advanceStreak, isFirstCompletionToday } from '../data/streak';
-import { averageNeedLevel, driftVitality, thrivingMultiplier, vitalityStage, type VitalityStage } from '../data/vitality';
+import {
+  averageNeedLevel,
+  computeStruggleDrain,
+  driftVitality,
+  thrivingMultiplier,
+  vitalityStage,
+  type VitalityStage,
+} from '../data/vitality';
 import type { Character, Goal, NeedType } from '../types';
 
 export interface AwayReport {
   activities: Activity[];
   stage: VitalityStage;
+  lostCoins: number;
+  lostXp: number;
 }
 
-// Advances both need decay and vitality together for however much real time
-// has passed. Vitality drifts toward the needs' average, bounded per hour —
-// see data/vitality.ts for why. Returns died=true the moment vitality
-// bottoms out, so callers can record a legacy entry and end the run.
-function applyTimePassage(character: Character, now: number): { character: Character; died: boolean } {
+// Advances need decay, vitality, and struggle-drain together for however
+// much real time has passed. Vitality drifts toward the needs' average,
+// bounded per hour — see data/vitality.ts for why. Returns died=true the
+// moment vitality bottoms out, so callers can record a legacy entry and end
+// the run. Coin drain is returned separately (not applied here) since coins
+// live in the park, not the character.
+function applyTimePassage(
+  character: Character,
+  now: number,
+): { character: Character; died: boolean; drainedCoins: number; drainedXp: number } {
   const needs = { ...character.needs };
   let needsChanged = false;
 
@@ -37,31 +51,70 @@ function applyTimePassage(character: Character, now: number): { character: Chara
   const vitality = driftVitality(character.vitality, averageNeedLevel(needs), hoursElapsed);
   const vitalityChanged = vitality !== character.vitality;
 
-  if (!needsChanged && !vitalityChanged) return { character, died: false };
+  const drain = computeStruggleDrain(
+    character.strugglingSince,
+    character.lastUpdatedAt,
+    now,
+    vitality,
+    character.streak.count,
+  );
 
-  const updated: Character = { ...character, needs, vitality, lastUpdatedAt: now };
-  return { character: updated, died: vitality <= 0 };
+  let xp = character.xp;
+  let level = character.level;
+  if (drain.drainedXp > 0) {
+    xp -= drain.drainedXp;
+    while (xp < 0 && level > 1) {
+      level -= 1;
+      xp += XP_PER_LEVEL;
+    }
+    if (level === 1 && xp < 0) xp = 0;
+  }
+
+  const xpChanged = xp !== character.xp || level !== character.level;
+  const strugglingSinceChanged = drain.strugglingSince !== character.strugglingSince;
+
+  if (!needsChanged && !vitalityChanged && !xpChanged && !strugglingSinceChanged) {
+    return { character, died: false, drainedCoins: 0, drainedXp: 0 };
+  }
+
+  const updated: Character = {
+    ...character,
+    needs,
+    vitality,
+    xp,
+    level,
+    strugglingSince: drain.strugglingSince,
+    lastUpdatedAt: now,
+  };
+  return { character: updated, died: vitality <= 0, drainedCoins: drain.drainedCoins, drainedXp: drain.drainedXp };
 }
 
 // The single place that reacts to "real time passed since we last looked" —
-// used on cold start, the foreground tick, and app-resume alike, so death
-// and away-activity detection behave identically no matter how the gap
-// happened.
+// used on cold start, the foreground tick, and app-resume alike, so death,
+// away-activity detection, and struggle-drain all behave identically no
+// matter how the gap happened. coinsDelta always reflects any drain from
+// this call (applied silently tick-to-tick); the away report only surfaces
+// it in a modal when the gap was long enough to also show away-activities —
+// no popup for the ordinary 30-second foreground tick.
 function processTimePassage(
   prev: Character,
   now: number,
-): { character: Character | null; deceased: Character | null; awayReport: AwayReport | null } {
-  const { character: updated, died } = applyTimePassage(prev, now);
+): { character: Character | null; deceased: Character | null; awayReport: AwayReport | null; coinsDelta: number } {
+  const { character: updated, died, drainedCoins, drainedXp } = applyTimePassage(prev, now);
   if (died) {
     recordLegacyEntry(updated);
-    return { character: null, deceased: updated, awayReport: null };
+    // No drain on death — the character already paid the ultimate cost.
+    return { character: null, deceased: updated, awayReport: null, coinsDelta: 0 };
   }
 
   const hoursAway = (now - prev.lastUpdatedAt) / 3_600_000;
   const count = awayActivityCount(hoursAway);
-  const awayReport = count > 0 ? { activities: pickAwayActivities(count), stage: vitalityStage(updated.vitality) } : null;
+  const awayReport =
+    count > 0
+      ? { activities: pickAwayActivities(count), stage: vitalityStage(updated.vitality), lostCoins: drainedCoins, lostXp: drainedXp }
+      : null;
 
-  return { character: updated, deceased: null, awayReport };
+  return { character: updated, deceased: null, awayReport, coinsDelta: -drainedCoins };
 }
 
 export interface GoalDraft {
@@ -77,7 +130,13 @@ function buildGoal(needType: NeedType, draft: GoalDraft): Goal {
   };
 }
 
-export function useCharacter() {
+// `onCoinsDrained` is called (with a negative amount) whenever struggle-drain
+// takes coins — the character hook owns vitality/XP, but coins live in the
+// park, so this is how the two stay in sync without merging the two stores.
+export function useCharacter(onCoinsDrained?: (amount: number) => void) {
+  const onCoinsDrainedRef = useRef(onCoinsDrained);
+  onCoinsDrainedRef.current = onCoinsDrained;
+
   const [deceased, setDeceased] = useState<Character | null>(null);
   const [awayReport, setAwayReport] = useState<AwayReport | null>(null);
   const [character, setCharacter] = useState<Character | null>(() => {
@@ -87,6 +146,7 @@ export function useCharacter() {
     // setState during the initializer isn't safe — defer to right after mount.
     if (result.deceased) queueMicrotask(() => setDeceased(result.deceased));
     else if (result.awayReport) queueMicrotask(() => setAwayReport(result.awayReport));
+    if (result.coinsDelta) queueMicrotask(() => onCoinsDrainedRef.current?.(result.coinsDelta));
     return result.character;
   });
   const [leveledUp, setLeveledUp] = useState(false);
@@ -97,14 +157,18 @@ export function useCharacter() {
     saveCharacter(character);
   }, [character]);
 
+  // Computed from characterRef (not a setCharacter functional updater) and
+  // side effects fired directly here, not from inside one — a setState
+  // updater isn't guaranteed to run synchronously, and calling other
+  // setState functions from inside one is unsafe under React 18 batching.
   const tick = useCallback(() => {
-    setCharacter((prev) => {
-      if (!prev) return prev;
-      const result = processTimePassage(prev, Date.now());
-      if (result.deceased) setDeceased(result.deceased);
-      else if (result.awayReport) setAwayReport(result.awayReport);
-      return result.character;
-    });
+    const prev = characterRef.current;
+    if (!prev) return;
+    const result = processTimePassage(prev, Date.now());
+    if (result.deceased) setDeceased(result.deceased);
+    else if (result.awayReport) setAwayReport(result.awayReport);
+    if (result.coinsDelta) onCoinsDrainedRef.current?.(result.coinsDelta);
+    setCharacter(result.character);
   }, []);
 
   // Keep need bars (and vitality) ticking in real time while the app is open.
@@ -156,6 +220,7 @@ export function useCharacter() {
         taskLog: [],
         streak: { count: 0, longest: 0, lastActiveDay: '' },
         vitality: 65, // Healthy, not Thriving — that's earned, not a starting gift.
+        strugglingSince: null,
         createdAt: now,
         lastUpdatedAt: now,
       };
@@ -188,7 +253,7 @@ export function useCharacter() {
 
   // Returns the amount actually awarded (Lucky Task and/or Thriving can both
   // apply), so callers can both award coins and show accurate feedback.
-  const completeTask = useCallback((needType: NeedType, taskId: string) => {
+  const completeTask = useCallback((needType: NeedType, taskId: string, note: string) => {
     const current = characterRef.current;
     const task = current?.goals[needType]?.tasks.find((t) => t.id === taskId);
     if (!task || !current) return 0;
@@ -231,6 +296,7 @@ export function useCharacter() {
             id: crypto.randomUUID(),
             needType,
             taskLabel: task.label,
+            note,
             restored: reward,
             completedAt: Date.now(),
           },

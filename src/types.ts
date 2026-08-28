@@ -30,6 +30,8 @@ export interface TaskLogEntry {
   id: string;
   needType: NeedType;
   taskLabel: string;
+  /** What the user says they actually did — required at completion, for real accountability. */
+  note: string;
   restored: number;
   completedAt: number;
 }
@@ -53,6 +55,8 @@ export interface Character {
   streak: Streak;
   /** Slow-moving aggregate wellbeing (0-100) — drifts toward the needs' average over time, capped per hour. Hitting 0 is death. */
   vitality: number;
+  /** Timestamp the current continuous Struggling-or-worse streak began, or null when Healthy+. Drives the grace period before coins/XP start draining. */
+  strugglingSince: number | null;
   createdAt: number;
   lastUpdatedAt: number;
 }

@@ -4,8 +4,14 @@
   box-sizing: border-box;
 }
 
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
+  overscroll-behavior: none;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -75,4 +81,53 @@ body {
 
 .animate-thriving-glow {
   animation: thriving-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes activity-bounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-22px) scale(0.92, 1.1); }
+}
+
+.animate-activity-bounce {
+  animation: activity-bounce 0.55s ease-in-out infinite;
+}
+
+@keyframes activity-sway {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+.animate-activity-sway {
+  animation: activity-sway 1.4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes activity-splash {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(-4px) scale(1.05, 0.95); }
+  60% { transform: translateY(2px) scale(0.96, 1.05); }
+}
+
+.animate-activity-splash {
+  animation: activity-splash 0.5s ease-in-out infinite;
+}
+
+@keyframes firework-particle {
+  0% { transform: translate(-50%, -50%) translate(0, 0) scale(1); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--fw-dx), var(--fw-dy)) scale(0.3); opacity: 0; }
+}
+
+.animate-firework-particle {
+  animation: firework-particle 0.9s ease-out forwards;
+}
+
+@keyframes activity-spin {
+  0%, 100% { transform: rotate(-14deg); }
+  50% { transform: rotate(14deg); }
+}
+
+.animate-activity-spin {
+  animation: activity-spin 0.9s ease-in-out infinite;
+  transform-origin: top center;
 }
