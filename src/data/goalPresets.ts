@@ -12,71 +12,89 @@ export interface GoalPreset {
 
 // Quick-fill suggestions shown as tappable chips during setup — never the
 // only option, just a shortcut so most of onboarding is tapping, not typing.
+//
+// Deliberately NOT themed to their need (no "eat healthier" under Food,
+// "stay hydrated" under Water, etc.) — real goals like "do homework" or
+// "go to the gym" don't naturally sort into food/water/shelter/weather/
+// rest/health buckets, and pretending they do just makes the suggestions
+// feel narrower than they should. Which need a goal is filed under is
+// bookkeeping for the app, not something the goal is supposed to be "about."
 export const GOAL_PRESETS: Record<NeedType, GoalPreset[]> = {
   food: [
     {
-      title: 'Eat healthier',
+      title: 'Do homework',
       tasks: [
-        { label: 'Cooked a real meal', restoreAmount: 5 },
-        { label: 'Ate 3 meals today', restoreAmount: 4 },
-        { label: 'Packed a healthy lunch', restoreAmount: 4 },
+        { label: 'Finished a homework assignment', restoreAmount: 5 },
+        { label: 'Studied for an hour', restoreAmount: 4 },
+        { label: 'Turned in an assignment on time', restoreAmount: 5 },
       ],
     },
     {
-      title: 'Cook more at home',
+      title: 'Work on a side project',
       tasks: [
-        { label: 'Made dinner instead of ordering out', restoreAmount: 6 },
-        { label: 'Tried a new recipe', restoreAmount: 5 },
-        { label: 'Meal-prepped for the week', restoreAmount: 8 },
+        { label: 'Made progress on my project', restoreAmount: 5 },
+        { label: 'Fixed a bug', restoreAmount: 4 },
+        { label: 'Shipped a small feature', restoreAmount: 7 },
       ],
     },
     {
-      title: 'Cut back on takeout',
+      title: 'Learn a new language',
       tasks: [
-        { label: 'Skipped ordering delivery', restoreAmount: 4 },
-        { label: 'Brought lunch instead of buying', restoreAmount: 4 },
+        { label: 'Practiced vocabulary', restoreAmount: 3 },
+        { label: 'Completed a lesson', restoreAmount: 4 },
+        { label: 'Had a conversation practice session', restoreAmount: 6 },
       ],
     },
   ],
   water: [
     {
-      title: 'Stay hydrated',
+      title: 'Go to the gym',
       tasks: [
-        { label: 'Drank 8 glasses of water', restoreAmount: 5 },
-        { label: 'Refilled my water bottle', restoreAmount: 2 },
-        { label: 'Skipped a sugary drink', restoreAmount: 3 },
+        { label: 'Completed a workout', restoreAmount: 6 },
+        { label: 'Did cardio', restoreAmount: 4 },
+        { label: 'Hit a new personal record', restoreAmount: 8 },
       ],
     },
     {
-      title: 'Cut back on caffeine',
+      title: 'Read more',
       tasks: [
-        { label: 'Had water instead of coffee/soda', restoreAmount: 4 },
-        { label: 'Stopped caffeine after noon', restoreAmount: 4 },
+        { label: 'Read a chapter', restoreAmount: 3 },
+        { label: 'Finished a book', restoreAmount: 8 },
+        { label: 'Read for 30 minutes', restoreAmount: 3 },
+      ],
+    },
+    {
+      title: 'Practice an instrument',
+      tasks: [
+        { label: 'Practiced for 30 minutes', restoreAmount: 4 },
+        { label: 'Learned a new song', restoreAmount: 6 },
+        { label: 'Ran through scales', restoreAmount: 3 },
       ],
     },
   ],
   shelter: [
     {
-      title: 'Keep my space organized',
+      title: 'Clean the house',
       tasks: [
         { label: 'Cleaned the kitchen', restoreAmount: 5 },
+        { label: 'Vacuumed', restoreAmount: 4 },
         { label: 'Did a load of laundry', restoreAmount: 5 },
-        { label: 'Decluttered a room', restoreAmount: 4 },
       ],
     },
     {
-      title: 'Stay on top of chores',
+      title: 'Declutter',
       tasks: [
-        { label: 'Took out the trash', restoreAmount: 2 },
-        { label: 'Vacuumed or swept', restoreAmount: 4 },
-        { label: 'Made the bed', restoreAmount: 2 },
+        { label: 'Cleared out a drawer', restoreAmount: 3 },
+        { label: 'Donated old items', restoreAmount: 5 },
+        { label: 'Organized a closet', restoreAmount: 5 },
       ],
     },
     {
-      title: 'Handle home admin',
+      title: 'Handle life admin',
       tasks: [
-        { label: 'Paid a bill', restoreAmount: 4 },
-        { label: 'Filed or organized paperwork', restoreAmount: 4 },
+        { label: 'Paid a bill', restoreAmount: 3 },
+        { label: 'Filed paperwork', restoreAmount: 4 },
+        { label: 'Scheduled an appointment', restoreAmount: 3 },
       ],
     },
   ],
@@ -84,72 +102,85 @@ export const GOAL_PRESETS: Record<NeedType, GoalPreset[]> = {
     {
       title: 'Plan ahead',
       tasks: [
-        { label: 'Checked the forecast and planned accordingly', restoreAmount: 3 },
-        { label: 'Packed for the day (umbrella/layers)', restoreAmount: 2 },
+        { label: 'Planned tomorrow', restoreAmount: 3 },
+        { label: 'Reviewed my calendar', restoreAmount: 3 },
+        { label: 'Made a to-do list for the week', restoreAmount: 4 },
       ],
     },
     {
-      title: 'Manage my schedule',
+      title: 'Job hunting',
       tasks: [
-        { label: "Reviewed tomorrow's calendar", restoreAmount: 3 },
-        { label: 'Set out clothes/gear for tomorrow', restoreAmount: 2 },
+        { label: 'Applied for a job', restoreAmount: 6 },
+        { label: 'Updated my resume', restoreAmount: 5 },
+        { label: 'Sent a networking email', restoreAmount: 4 },
       ],
     },
     {
-      title: 'Be prepared for the unexpected',
-      tasks: [{ label: 'Checked in on an emergency plan or kit', restoreAmount: 5 }],
+      title: 'Study for an exam',
+      tasks: [
+        { label: 'Reviewed lecture notes', restoreAmount: 4 },
+        { label: 'Did practice problems', restoreAmount: 5 },
+        { label: 'Made a study guide', restoreAmount: 5 },
+      ],
     },
   ],
   rest: [
     {
-      title: 'Get better sleep',
+      title: 'Journal',
       tasks: [
-        { label: 'Went to bed on time', restoreAmount: 5 },
-        { label: 'No screens before bed', restoreAmount: 3 },
-        { label: 'Woke up without hitting snooze', restoreAmount: 3 },
+        { label: 'Wrote a journal entry', restoreAmount: 3 },
+        { label: 'Reflected on the day', restoreAmount: 3 },
+        { label: 'Wrote down three good things', restoreAmount: 2 },
       ],
     },
     {
-      title: 'Take real breaks',
+      title: 'Meditate',
       tasks: [
-        { label: 'Took a break away from my desk', restoreAmount: 3 },
-        { label: 'Had a screen-free evening', restoreAmount: 5 },
+        { label: 'Did a meditation session', restoreAmount: 4 },
+        { label: 'Practiced deep breathing', restoreAmount: 2 },
+        { label: 'Took a mindful walk', restoreAmount: 3 },
       ],
     },
     {
-      title: 'Recharge on weekends',
-      tasks: [{ label: 'Took a full rest day', restoreAmount: 6 }],
+      title: 'Call a family member',
+      tasks: [
+        { label: 'Called a parent', restoreAmount: 4 },
+        { label: 'Checked in with a friend', restoreAmount: 3 },
+        { label: 'Sent a thoughtful message', restoreAmount: 2 },
+      ],
     },
   ],
   health: [
     {
-      title: 'Move every day',
+      title: 'Cook at home',
       tasks: [
-        { label: 'Went for a walk', restoreAmount: 4 },
-        { label: 'Worked out', restoreAmount: 6 },
-        { label: 'Took the stairs', restoreAmount: 2 },
+        { label: 'Cooked dinner from scratch', restoreAmount: 5 },
+        { label: 'Meal-prepped for the week', restoreAmount: 7 },
+        { label: 'Tried a new recipe', restoreAmount: 5 },
       ],
     },
     {
-      title: 'Build a fitness habit',
+      title: 'Practice a hobby',
       tasks: [
-        { label: 'Did a workout class', restoreAmount: 6 },
-        { label: 'Stretched or did mobility work', restoreAmount: 3 },
+        { label: 'Worked on a craft project', restoreAmount: 4 },
+        { label: 'Painted or drew something', restoreAmount: 4 },
+        { label: 'Played a game I enjoy', restoreAmount: 3 },
       ],
     },
     {
-      title: 'Take care of my body',
+      title: 'Volunteer',
       tasks: [
-        { label: 'Went to a checkup or appointment', restoreAmount: 6 },
-        { label: 'Took my vitamins/meds', restoreAmount: 2 },
+        { label: 'Volunteered for an hour', restoreAmount: 6 },
+        { label: 'Helped a neighbor', restoreAmount: 4 },
+        { label: 'Donated to a cause', restoreAmount: 3 },
       ],
     },
   ],
 };
 
-// Flat, deduped-by-label task suggestions for a need, pooled across all of
-// its goal presets — shown as quick-add chips regardless of which goal
-// title the user ends up with.
+// Task suggestions scoped to the specific goal, not every goal filed under
+// the same need — falls back to that need's full pool only for a custom
+// (non-preset) title.
 export function commonTasksFor(needType: NeedType): TaskPreset[] {
   const seen = new Set<string>();
   const tasks: TaskPreset[] = [];
@@ -163,10 +194,6 @@ export function commonTasksFor(needType: NeedType): TaskPreset[] {
   return tasks;
 }
 
-// Task suggestions scoped to the specific goal, not every goal under the same
-// need — e.g. "Drank 8 glasses of water" shouldn't show up as a suggestion
-// for "Stay on top of chores" just because they're both under Water/Shelter.
-// Falls back to the need's full pool only for a custom (non-preset) title.
 export function tasksForGoal(needType: NeedType, title: string): TaskPreset[] {
   const preset = GOAL_PRESETS[needType].find((p) => p.title === title);
   return preset ? preset.tasks : commonTasksFor(needType);

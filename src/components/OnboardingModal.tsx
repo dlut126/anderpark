@@ -35,12 +35,12 @@ export function OnboardingModal({ onCreate }: Props) {
   const [nickname, setNickname] = useState('');
   const [goalItems, setGoalItems] = useState<GoalItem[]>([]);
   const [customGoalText, setCustomGoalText] = useState('');
-  const [customNeedType, setCustomNeedType] = useState<NeedType | null>(null);
   const [tasksByGoal, setTasksByGoal] = useState<Record<string, { label: string; restoreAmount: number }[]>>({});
   const [taskLabel, setTaskLabel] = useState('');
   const [taskReward, setTaskReward] = useState(5);
 
   const takenNeeds = new Set(goalItems.map((g) => g.needType));
+  const nextFreeNeed = NEED_DEFINITIONS.find((def) => !takenNeeds.has(def.id))?.id ?? null;
 
   const addGoal = (title: string, needType: NeedType) => {
     const trimmed = title.trim();
@@ -141,79 +141,56 @@ export function OnboardingModal({ onCreate }: Props) {
           <>
             <h2 className="mb-1 text-2xl font-bold text-emerald-900">What are you working on?</h2>
             <p className="mb-4 text-sm text-emerald-700">
-              Tap a suggestion to add it — it's automatically sorted into what it feeds. Only one goal per need, so
-              picking a second one for the same need replaces the slot.
+              Add whatever you want to stay accountable for — tap a suggestion or write your own. You can add up to
+              six.
             </p>
 
             <div className="mb-3 flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => {
                 const added = goalItems.some((g) => g.title === s.title);
-                const blockedByOther = !added && takenNeeds.has(s.needType);
+                const slotTaken = !added && takenNeeds.has(s.needType);
                 return (
                   <button
                     key={s.title}
-                    disabled={added || blockedByOther}
+                    disabled={added || slotTaken}
                     onClick={() => addGoal(s.title, s.needType)}
-                    title={blockedByOther ? `${NEED_DEFINITIONS.find((d) => d.id === s.needType)!.label} is already covered` : undefined}
-                    className={`flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                       added
                         ? 'cursor-default border-emerald-200 bg-emerald-100 text-emerald-400'
-                        : blockedByOther
+                        : slotTaken
                           ? 'cursor-not-allowed border-emerald-100 bg-emerald-50/50 text-emerald-300'
                           : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-400'
                     }`}
                   >
-                    <NeedIcon needType={s.needType} size={13} />
-                    {added ? '✓ ' : ''}
+                    {added ? '✓ ' : '+ '}
                     {s.title}
                   </button>
                 );
               })}
             </div>
 
-            <p className="mb-2 text-xs font-semibold text-emerald-700">Something else — pick what it's for</p>
-            <div className="mb-2 flex flex-wrap gap-1.5">
-              {NEED_DEFINITIONS.map((def) => {
-                const blockedByOther = takenNeeds.has(def.id) && customNeedType !== def.id;
-                return (
-                  <button
-                    key={def.id}
-                    disabled={blockedByOther}
-                    onClick={() => setCustomNeedType((prev) => (prev === def.id ? null : def.id))}
-                    className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition ${
-                      customNeedType === def.id
-                        ? 'border-emerald-500 bg-emerald-500 text-white'
-                        : blockedByOther
-                          ? 'cursor-not-allowed border-emerald-100 bg-emerald-50/50 text-emerald-300'
-                          : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-400'
-                    }`}
-                  >
-                    <NeedIcon needType={def.id} size={13} />
-                    {def.label}
-                  </button>
-                );
-              })}
-            </div>
             <div className="mb-4 flex gap-2">
               <input
                 value={customGoalText}
                 onChange={(e) => setCustomGoalText(e.target.value)}
-                placeholder="Name your goal..."
+                placeholder="Something else..."
                 className="flex-1 rounded-lg border border-emerald-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
               />
               <button
-                disabled={!customGoalText.trim() || !customNeedType}
+                disabled={!customGoalText.trim() || nextFreeNeed === null}
                 onClick={() => {
-                  if (!customNeedType) return;
-                  addGoal(customGoalText, customNeedType);
+                  if (nextFreeNeed === null) return;
+                  addGoal(customGoalText, nextFreeNeed);
                   setCustomGoalText('');
-                  setCustomNeedType(null);
                 }}
                 className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-200"
               >
                 Add
               </button>
             </div>
+            {nextFreeNeed === null && goalItems.length > 0 && (
+              <p className="mb-4 -mt-2 text-xs text-emerald-500">You've added the max of six.</p>
+            )}
 
             {goalItems.length > 0 && (
               <div>
