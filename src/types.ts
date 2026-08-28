@@ -1,46 +1,58 @@
-export interface TaskPreset {
-  id: string;
+export type NeedType = 'food' | 'water' | 'shelter' | 'weather' | 'rest' | 'health';
+
+export interface NeedDefinition {
+  id: NeedType;
   label: string;
-  foodReward: number;
+  needyLabel: string;
+  emoji: string;
+  blurb: string;
+  decayPerMinute: number;
 }
 
-export interface Species {
-  id: string;
-  name: string;
-  image: string;
-  tagline: string;
-  goalDescription: string;
-  foodName: string;
-  foodEmoji: string;
-  presetTasks: TaskPreset[];
-  // CSS filter applied to the (grayscale) art in color mode — a tint, not real
-  // recolored artwork, since we don't have a way to regenerate the source PNGs.
-  colorFilter: string;
-}
-
-export interface CustomTask {
+export interface GoalTask {
   id: string;
   label: string;
-  foodReward: number;
+  restoreAmount: number;
+}
+
+export interface Goal {
+  needType: NeedType;
+  title: string;
+  tasks: GoalTask[];
+}
+
+export interface NeedState {
+  level: number;
+  lastUpdatedAt: number;
 }
 
 export interface TaskLogEntry {
   id: string;
+  needType: NeedType;
   taskLabel: string;
-  foodEarned: number;
+  restored: number;
   completedAt: number;
 }
 
-export interface Pet {
+export interface Streak {
+  count: number;
+  longest: number;
+  /** YYYY-MM-DD local date of the last day a task was completed, '' if never. */
+  lastActiveDay: string;
+}
+
+export interface Character {
   id: string;
-  speciesId: string;
   nickname: string;
+  appearanceId: string;
   level: number;
   xp: number;
-  hunger: number;
-  foodInventory: number;
-  customTasks: CustomTask[];
+  needs: Partial<Record<NeedType, NeedState>>;
+  goals: Partial<Record<NeedType, Goal>>;
   taskLog: TaskLogEntry[];
+  streak: Streak;
+  /** Slow-moving aggregate wellbeing (0-100) — drifts toward the needs' average over time, capped per hour. Hitting 0 is death. */
+  vitality: number;
   createdAt: number;
   lastUpdatedAt: number;
 }

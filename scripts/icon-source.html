@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html, body { margin: 0; padding: 0; }
+
+      .canvas {
+        width: 1024px;
+        height: 1024px;
+        position: relative;
+        overflow: hidden;
+      }
+      .canvas.splash {
+        width: 2732px;
+        height: 2732px;
+      }
+
+      .canvas.light {
+        background: linear-gradient(to bottom, #4d7fc9 0%, #7fb3e0 55%, #d9edd0 100%);
+      }
+      .canvas.dark {
+        background: linear-gradient(to bottom, #8a8a8a 0%, #c2c2c2 55%, #eeeeee 100%);
+      }
+
+      .ground {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 50%;
+        background-size: 24px 24px;
+      }
+      .light .ground {
+        background-color: #8fc76a;
+        background-image: conic-gradient(#7ab558 90deg, #8fc76a 90deg 180deg, #7ab558 180deg 270deg, #8fc76a 270deg);
+      }
+      .dark .ground {
+        background-color: #dcdcdc;
+        background-image: conic-gradient(#c8c8c8 90deg, #dcdcdc 90deg 180deg, #c8c8c8 180deg 270deg, #dcdcdc 270deg);
+      }
+      .splash .ground {
+        background-size: 48px 48px;
+      }
+
+      .sun {
+        position: absolute;
+        top: 8%;
+        right: 10%;
+        width: 13%;
+        height: 13%;
+        border-radius: 50%;
+        background: #ffd54f;
+        box-shadow: 0 0 0 18px rgba(255, 213, 79, 0.25);
+      }
+      .dark .sun {
+        background: #f5f5f5;
+        box-shadow: 0 0 0 18px rgba(245, 245, 245, 0.25);
+      }
+
+      .pets {
+        position: absolute;
+        left: 50%;
+        bottom: 40%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: flex-end;
+      }
+      .pets img {
+        display: block;
+        height: 340px;
+        width: auto;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.25));
+      }
+      .splash .pets img { height: 907px; }
+
+      .pets img:nth-child(1) { margin-right: -160px; z-index: 1; }
+      .pets img:nth-child(2) { z-index: 3; }
+      .pets img:nth-child(3) { margin-left: -160px; z-index: 2; }
+      .splash .pets img:nth-child(1) { margin-right: -427px; }
+      .splash .pets img:nth-child(3) { margin-left: -427px; }
+
+      .octopus { filter: sepia(1) saturate(4) hue-rotate(165deg) brightness(0.95); }
+      .beaver { filter: sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.95); }
+      .owl { filter: sepia(1) saturate(3) hue-rotate(20deg) brightness(1); }
+      .dark .octopus, .dark .beaver, .dark .owl { filter: none; }
+    </style>
+  </head>
+  <body>
+    <div class="canvas light" id="stage">
+      <div class="sun"></div>
+      <div class="ground"></div>
+      <div class="pets">
+        <img class="owl" src="../src/assets/pets/owl.png" />
+        <img class="beaver" src="../src/assets/pets/beaver.png" />
+        <img class="octopus" src="../src/assets/pets/octopus.png" />
+      </div>
+    </div>
+  </body>
+</html>

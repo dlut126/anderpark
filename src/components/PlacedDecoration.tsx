@@ -1,9 +1,9 @@
 import { useRef, useState, type RefObject } from 'react';
-import type { Decoration } from '../data/decorations';
+import type { DecorationTier } from '../data/decorations';
 import { pixelSpriteHeight, PixelSprite } from './PixelDecor';
 
 interface Props {
-  deco: Decoration;
+  deco: DecorationTier;
   position: { left: number; bottom: number };
   groundRef: RefObject<HTMLDivElement | null>;
   colorMode: boolean;

@@ -133,8 +133,16 @@ const CLOUD_MATRIX = [
   [1, 1, 1, 1, 1, 1],
 ];
 
-export function PixelCloud({ size = 5, className }: { size?: number; className?: string }) {
-  return <PixelSprite matrix={CLOUD_MATRIX} size={size} palette={{ 1: '#d8d8d8' }} className={className} />;
+export function PixelCloud({
+  size = 5,
+  color = '#d8d8d8',
+  className,
+}: {
+  size?: number;
+  color?: string;
+  className?: string;
+}) {
+  return <PixelSprite matrix={CLOUD_MATRIX} size={size} palette={{ 1: color }} className={className} />;
 }
 
 const GRASS_MATRIX_A = [

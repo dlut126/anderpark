@@ -1,17 +1,21 @@
-import type { Pet } from '../types';
+import type { Character } from '../types';
 
-const STORAGE_KEY = 'anderpark-roster';
+const STORAGE_KEY = 'anderpark-character';
 
-export function loadRoster(): Pet[] {
+export function loadCharacter(): Character | null {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
+  if (!raw) return null;
   try {
-    return JSON.parse(raw) as Pet[];
+    return JSON.parse(raw) as Character;
   } catch {
-    return [];
+    return null;
   }
 }
 
-export function saveRoster(roster: Pet[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(roster));
+export function saveCharacter(character: Character | null): void {
+  if (!character) {
+    localStorage.removeItem(STORAGE_KEY);
+    return;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(character));
 }

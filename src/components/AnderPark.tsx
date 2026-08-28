@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react';
-import { getDecoration } from '../data/decorations';
-import type { Pet } from '../types';
-import { PetSprite } from './PetSprite';
+import { getTier } from '../data/decorations';
+import type { Character } from '../types';
+import { CharacterSprite } from './CharacterSprite';
 import {
   GRASS_MATRICES,
   grayHex,
@@ -15,11 +15,11 @@ import {
 import { PlacedDecoration } from './PlacedDecoration';
 
 interface Props {
-  pets: Pet[];
-  ownedDecorationIds: string[];
+  character: Character | null;
+  ownedTierByLine: Record<string, number>;
   decorationPositions: Record<string, { left: number; bottom: number }>;
   colorMode: boolean;
-  onSelectPet: (pet: Pet) => void;
+  onSelectCharacter: () => void;
   onMoveDecoration: (id: string, left: number, bottom: number) => void;
 }
 
@@ -36,11 +36,11 @@ function treePalette(seed: number, colorMode: boolean) {
 }
 
 export function AnderPark({
-  pets,
-  ownedDecorationIds,
+  character,
+  ownedTierByLine,
   decorationPositions,
   colorMode,
-  onSelectPet,
+  onSelectCharacter,
   onMoveDecoration,
 }: Props) {
   const groundRef = useRef<HTMLDivElement>(null);
@@ -72,7 +72,7 @@ export function AnderPark({
   );
 
   return (
-    <div className={`fixed inset-0 h-screen w-screen overflow-hidden ${colorMode ? 'pixel-sky-color' : 'pixel-sky'}`}>
+    <div className={`fixed inset-0 overflow-hidden ${colorMode ? 'pixel-sky-color' : 'pixel-sky'}`}>
       <PixelSun size={11} color={colorMode ? '#ffd54f' : undefined} className="absolute right-[10%] top-[10%]" />
       <PixelCloud
         size={6}
@@ -125,33 +125,34 @@ export function AnderPark({
           </div>
         ))}
 
-        {ownedDecorationIds.map((id) => {
-          const deco = getDecoration(id);
-          const position = decorationPositions[id];
+        {Object.entries(ownedTierByLine).map(([lineId, ownedCount]) => {
+          if (ownedCount <= 0) return null;
+          const deco = getTier(lineId, ownedCount - 1);
+          const position = decorationPositions[lineId];
           if (!deco || !position) return null;
           return (
             <PlacedDecoration
-              key={id}
+              key={lineId}
               deco={deco}
               position={position}
               groundRef={groundRef}
               colorMode={colorMode}
-              onMove={(left, bottom) => onMoveDecoration(id, left, bottom)}
+              onMove={(left, bottom) => onMoveDecoration(lineId, left, bottom)}
             />
           );
         })}
       </div>
 
-      {pets.length === 0 ? (
+      {!character ? (
         <div className="absolute inset-0 flex items-center justify-center px-4">
           <p className="border-2 border-white/70 bg-black px-4 py-3 text-center font-mono text-sm text-white">
             ANDERPARK IS EMPTY
             <br />
-            Adopt your first pet to get started.
+            Create your character to get started.
           </p>
         </div>
       ) : (
-        pets.map((pet) => <PetSprite key={pet.id} pet={pet} colorMode={colorMode} onClick={() => onSelectPet(pet)} />)
+        <CharacterSprite character={character} colorMode={colorMode} onClick={onSelectCharacter} />
       )}
     </div>
   );

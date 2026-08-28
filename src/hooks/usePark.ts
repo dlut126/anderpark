@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DECORATIONS } from '../data/decorations';
+import { getLine } from '../data/decorations';
 
 const STORAGE_KEY = 'anderpark-park';
 
@@ -10,7 +10,8 @@ interface DecorationPosition {
 
 interface ParkState {
   coins: number;
-  ownedDecorationIds: string[];
+  /** Number of tiers unlocked per line — 0 = not owned, 1 = tier 1 owned, etc. */
+  ownedTierByLine: Record<string, number>;
   decorationPositions: Record<string, DecorationPosition>;
 }
 
@@ -24,25 +25,25 @@ function defaultPosition(index: number): DecorationPosition {
 
 function loadPark(): ParkState {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return { coins: 0, ownedDecorationIds: [], decorationPositions: {} };
+  if (!raw) return { coins: 0, ownedTierByLine: {}, decorationPositions: {} };
   try {
     const parsed = JSON.parse(raw) as Partial<ParkState>;
-    const ownedDecorationIds = parsed.ownedDecorationIds ?? [];
+    const ownedTierByLine = parsed.ownedTierByLine ?? {};
     const decorationPositions = { ...(parsed.decorationPositions ?? {}) };
 
-    // Backfill positions for decorations owned before per-item placement existed,
+    // Backfill positions for lines owned before per-item placement existed,
     // so they don't silently disappear from the park.
-    ownedDecorationIds.forEach((id, i) => {
-      if (!decorationPositions[id]) decorationPositions[id] = defaultPosition(i);
+    Object.keys(ownedTierByLine).forEach((lineId, i) => {
+      if (!decorationPositions[lineId]) decorationPositions[lineId] = defaultPosition(i);
     });
 
     return {
       coins: parsed.coins ?? 0,
-      ownedDecorationIds,
+      ownedTierByLine,
       decorationPositions,
     };
   } catch {
-    return { coins: 0, ownedDecorationIds: [], decorationPositions: {} };
+    return { coins: 0, ownedTierByLine: {}, decorationPositions: {} };
   }
 }
 
@@ -57,35 +58,49 @@ export function usePark() {
     setPark((p) => ({ ...p, coins: p.coins + amount }));
   }, []);
 
-  const buyDecoration = useCallback((id: string) => {
+  // Buys the next tier in a line — tier 1 if unowned, otherwise the upgrade
+  // right above whatever's currently owned. Sequential by construction: you
+  // can never skip a tier since the "next" one is always owned+1.
+  const buyTier = useCallback((lineId: string) => {
     setPark((p) => {
-      const deco = DECORATIONS.find((d) => d.id === id);
-      if (!deco || p.ownedDecorationIds.includes(id) || p.coins < deco.cost) return p;
-      const count = p.ownedDecorationIds.length;
+      const line = getLine(lineId);
+      if (!line) return p;
+      const owned = p.ownedTierByLine[lineId] ?? 0;
+      const nextTier = line.tiers[owned];
+      if (!nextTier || p.coins < nextTier.cost) return p;
+
+      const isFirstPurchase = owned === 0;
+      const position = isFirstPurchase
+        ? defaultPosition(Object.keys(p.ownedTierByLine).length)
+        : p.decorationPositions[lineId];
+
       return {
-        coins: p.coins - deco.cost,
-        ownedDecorationIds: [...p.ownedDecorationIds, id],
-        decorationPositions: { ...p.decorationPositions, [id]: defaultPosition(count) },
+        coins: p.coins - nextTier.cost,
+        ownedTierByLine: { ...p.ownedTierByLine, [lineId]: owned + 1 },
+        decorationPositions: { ...p.decorationPositions, [lineId]: position },
       };
     });
   }, []);
 
-  const moveDecoration = useCallback((id: string, left: number, bottom: number) => {
+  const moveDecoration = useCallback((lineId: string, left: number, bottom: number) => {
     setPark((p) => ({
       ...p,
       decorationPositions: {
         ...p.decorationPositions,
-        [id]: { left: clamp(left, 2, 96), bottom: clamp(bottom, 2, 94) },
+        [lineId]: {
+          left: clamp(left, 2, 96),
+          bottom: clamp(bottom, 2, 94),
+        },
       },
     }));
   }, []);
 
   return {
     coins: park.coins,
-    ownedDecorationIds: park.ownedDecorationIds,
+    ownedTierByLine: park.ownedTierByLine,
     decorationPositions: park.decorationPositions,
     earnCoins,
-    buyDecoration,
+    buyTier,
     moveDecoration,
   };
 }
