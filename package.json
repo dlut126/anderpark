@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "cap:sync": "vite build && cap sync"
+    "cap:sync": "vite build && cap sync",
+    "build:pages": "tsc -b && vite build --mode gh-pages"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
